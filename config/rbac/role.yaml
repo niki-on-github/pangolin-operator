@@ -1,0 +1,38 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - tunnel.pangolin.io
+  resources:
+  - pangolinbindings
+  - pangolinresources
+  - pangolintunnels
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - tunnel.pangolin.io
+  resources:
+  - pangolinbindings/finalizers
+  - pangolinresources/finalizers
+  - pangolintunnels/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - tunnel.pangolin.io
+  resources:
+  - pangolinbindings/status
+  - pangolinresources/status
+  - pangolintunnels/status
+  verbs:
+  - get
+  - patch
+  - update

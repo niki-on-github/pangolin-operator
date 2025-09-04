@@ -1,0 +1,9 @@
+apiVersion: tunnel.pangolin.io/v1alpha1
+kind: PangolinTunnel
+metadata:
+  labels:
+    app.kubernetes.io/name: pangolin-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: pangolintunnel-sample
+spec:
+  # TODO(user): Add fields here

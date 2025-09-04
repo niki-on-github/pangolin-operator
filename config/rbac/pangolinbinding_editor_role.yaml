@@ -1,0 +1,27 @@
+# permissions for end users to edit pangolinbindings.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: pangolin-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: pangolinbinding-editor-role
+rules:
+- apiGroups:
+  - tunnel.pangolin.io
+  resources:
+  - pangolinbindings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - tunnel.pangolin.io
+  resources:
+  - pangolinbindings/status
+  verbs:
+  - get
