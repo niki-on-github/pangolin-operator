@@ -1,47 +1,62 @@
-/*
-Copyright 2025.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // PangolinTunnelSpec defines the desired state of PangolinTunnel
 type PangolinTunnelSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Pangolin API configuration
+	APIEndpoint string                   `json:"apiEndpoint"`
+	APIKeyRef   corev1.SecretKeySelector `json:"apiKeyRef"`
 
-	// Foo is an example field of PangolinTunnel. Edit pangolintunnel_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Organization info (can be discovered from API)
+	OrganizationID string `json:"organizationId,omitempty"`
+
+	// Site configuration
+	SiteName string `json:"siteName"`
+	SiteType string `json:"siteType"` // "newt", "wireguard", "local"
+
+	// Newt client configuration
+	Replicas   *int32          `json:"replicas,omitempty"`
+	Image      string          `json:"image,omitempty"` // Custom Newt image
+	NewtClient *NewtClientSpec `json:"newtClient,omitempty"`
+
+	// Optional: Advanced configuration
+	Config map[string]string `json:"config,omitempty"`
 }
 
 // PangolinTunnelStatus defines the observed state of PangolinTunnel
 type PangolinTunnelStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Site information from Pangolin API
+	SiteID string `json:"siteId,omitempty"`
+	Status string `json:"status,omitempty"`
+
+	// Connection details for Newt client
+	Endpoint      string `json:"endpoint,omitempty"`
+	NewtID        string `json:"newtId,omitempty"`
+	NewtSecretRef string `json:"newtSecretRef,omitempty"`
+
+	// Deployment status
+	ReadyReplicas int32 `json:"readyReplicas,omitempty"`
+
+	// Condition tracking
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// Last observed generation
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
+//+kubebuilder:resource:shortName=ptunnel
+//+kubebuilder:printcolumn:name="Site ID",type=string,JSONPath=`.status.siteId`
+//+kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.status`
+//+kubebuilder:printcolumn:name="Replicas",type=integer,JSONPath=`.status.readyReplicas`
+//+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
-// PangolinTunnel is the Schema for the pangolintunnels API
+// PangolinTunnel is the Schema for the pangolintunel API
 type PangolinTunnel struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -50,7 +65,7 @@ type PangolinTunnel struct {
 	Status PangolinTunnelStatus `json:"status,omitempty"`
 }
 
-// +kubebuilder:object:root=true
+//+kubebuilder:object:root=true
 
 // PangolinTunnelList contains a list of PangolinTunnel
 type PangolinTunnelList struct {
@@ -61,4 +76,10 @@ type PangolinTunnelList struct {
 
 func init() {
 	SchemeBuilder.Register(&PangolinTunnel{}, &PangolinTunnelList{})
+}
+
+type NewtClientSpec struct {
+	Enabled  bool   `json:"enabled,omitempty"`
+	Replicas *int32 `json:"replicas,omitempty"`
+	Image    string `json:"image,omitempty"`
 }

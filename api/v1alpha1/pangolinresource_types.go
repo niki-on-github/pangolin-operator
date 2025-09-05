@@ -1,45 +1,62 @@
-/*
-Copyright 2025.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // PangolinResourceSpec defines the desired state of PangolinResource
 type PangolinResourceSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Reference to the tunnel
+	TunnelRef LocalObjectReference `json:"tunnelRef"`
 
-	// Foo is an example field of PangolinResource. Edit pangolinresource_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Resource configuration
+	Name     string `json:"name"`
+	Protocol string `json:"protocol"` // "http", "tcp", "udp"
+
+	// HTTP-specific fields
+	Subdomain string `json:"subdomain,omitempty"`
+	DomainID  string `json:"domainId,omitempty"`
+
+	// TCP/UDP-specific fields
+	ProxyPort   *int32 `json:"proxyPort,omitempty"`
+	EnableProxy *bool  `json:"enableProxy,omitempty"`
+
+	// Target configuration
+	TargetIP     string `json:"targetIp"`
+	TargetPort   int32  `json:"targetPort"`
+	TargetMethod string `json:"targetMethod,omitempty"` // "http", "https", "tcp", "udp"
+
+	// Optional: Load balancing
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+// LocalObjectReference contains enough information to locate a resource within the same namespace
+type LocalObjectReference struct {
+	Name string `json:"name"`
 }
 
 // PangolinResourceStatus defines the observed state of PangolinResource
 type PangolinResourceStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	ResourceID string `json:"resourceId,omitempty"`
+	TargetID   string `json:"targetId,omitempty"`
+	Status     string `json:"status,omitempty"`
+	URL        string `json:"url,omitempty"`
+
+	// Condition tracking
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// Last observed generation
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
+//+kubebuilder:resource:shortName=presource
+//+kubebuilder:printcolumn:name="Resource ID",type=string,JSONPath=`.status.resourceId`
+//+kubebuilder:printcolumn:name="Protocol",type=string,JSONPath=`.spec.protocol`
+//+kubebuilder:printcolumn:name="URL",type=string,JSONPath=`.status.url`
+//+kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.status`
+//+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
 // PangolinResource is the Schema for the pangolinresources API
 type PangolinResource struct {
@@ -50,7 +67,7 @@ type PangolinResource struct {
 	Status PangolinResourceStatus `json:"status,omitempty"`
 }
 
-// +kubebuilder:object:root=true
+//+kubebuilder:object:root=true
 
 // PangolinResourceList contains a list of PangolinResource
 type PangolinResourceList struct {

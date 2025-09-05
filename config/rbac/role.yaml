@@ -5,10 +5,35 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - tunnel.pangolin.io
   resources:
   - pangolinbindings
   - pangolinresources
+  - pangolintunel
   - pangolintunnels
   verbs:
   - create
@@ -23,6 +48,7 @@ rules:
   resources:
   - pangolinbindings/finalizers
   - pangolinresources/finalizers
+  - pangolintunel/finalizers
   - pangolintunnels/finalizers
   verbs:
   - update
@@ -31,6 +57,7 @@ rules:
   resources:
   - pangolinbindings/status
   - pangolinresources/status
+  - pangolintunel/status
   - pangolintunnels/status
   verbs:
   - get
