@@ -626,4 +626,4 @@ Third‑party code bundled in this repository may be licensed under different te
 
 ---
 
-*Built with ❤️ using [Kubebuilder](https://book.kubebuilder.io/) and [Nix](https://nixos.org/) for reproducible development.*
+*Built with ❤️ using [Operator SDK](https://sdk.operatorframework.io/) and [Nix](https://nixos.org/) for reproducible development.*
