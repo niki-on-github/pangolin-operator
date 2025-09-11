@@ -1,47 +1,76 @@
-/*
-Copyright 2025.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // PangolinTunnelSpec defines the desired state of PangolinTunnel
 type PangolinTunnelSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Reference to the organization
+	// +kubebuilder:validation:Required
+	OrganizationRef LocalObjectReference `json:"organizationRef"`
 
-	// Foo is an example field of PangolinTunnel. Edit pangolintunnel_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Site configuration for NEW sites
+	SiteName string `json:"siteName,omitempty"`
+	SiteType string `json:"siteType,omitempty"`
+
+	// BINDING MODE: Bind to existing site using EITHER field
+	// Numeric site ID (e.g., 3)
+	SiteID *int `json:"siteId,omitempty"`
+
+	// OR nice ID (e.g., "impractical-oriental-wolf-snake")
+	NiceID string `json:"niceId,omitempty"`
+
+	// Newt client configuration (overrides org defaults)
+	NewtClient *NewtClientSpec `json:"newtClient,omitempty"`
+
+	// Custom configuration
+	Config map[string]string `json:"config,omitempty"`
 }
 
 // PangolinTunnelStatus defines the observed state of PangolinTunnel
 type PangolinTunnelStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Site information from Pangolin API (all populated)
+	SiteID   int    `json:"siteId,omitempty"`
+	NiceID   string `json:"niceId,omitempty"`
+	SiteName string `json:"siteName,omitempty"`
+	SiteType string `json:"siteType,omitempty"`
+
+	// Network information from API
+	Subnet  string `json:"subnet,omitempty"`
+	Address string `json:"address,omitempty"`
+
+	// Connection status from API
+	Online   bool   `json:"online,omitempty"`
+	Endpoint string `json:"endpoint,omitempty"`
+
+	// Newt-specific fields from API
+	NewtID        string `json:"newtId,omitempty"`
+	NewtSecretRef string `json:"newtSecretRef,omitempty"`
+
+	// Binding mode: "Created" or "Bound"
+	BindingMode string `json:"bindingMode,omitempty"`
+
+	// Deployment status
+	ReadyReplicas int32 `json:"readyReplicas,omitempty"`
+
+	// Current status
+	Status             string             `json:"status,omitempty"`
+	Conditions         []metav1.Condition `json:"conditions,omitempty"`
+	ObservedGeneration int64              `json:"observedGeneration,omitempty"`
 }
 
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
+//+kubebuilder:resource:shortName=ptunnel
+//+kubebuilder:printcolumn:name="Site ID",type=integer,JSONPath=`.status.siteId`
+//+kubebuilder:printcolumn:name="Nice ID",type=string,JSONPath=`.status.niceId`
+//+kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.status`
+//+kubebuilder:printcolumn:name="Binding Mode",type=string,JSONPath=`.status.bindingMode`
+//+kubebuilder:printcolumn:name="Online",type=boolean,JSONPath=`.status.online`
+//+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
-// PangolinTunnel is the Schema for the pangolintunnels API
+// PangolinTunnel is the Schema for the pangolintunnel API
 type PangolinTunnel struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -50,13 +79,19 @@ type PangolinTunnel struct {
 	Status PangolinTunnelStatus `json:"status,omitempty"`
 }
 
-// +kubebuilder:object:root=true
+//+kubebuilder:object:root=true
 
 // PangolinTunnelList contains a list of PangolinTunnel
 type PangolinTunnelList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []PangolinTunnel `json:"items"`
+}
+
+type NewtClientSpec struct {
+	Enabled  bool   `json:"enabled,omitempty"`
+	Replicas *int32 `json:"replicas,omitempty"`
+	Image    string `json:"image,omitempty"`
 }
 
 func init() {

@@ -1,45 +1,128 @@
-/*
-Copyright 2025.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // PangolinResourceSpec defines the desired state of PangolinResource
 type PangolinResourceSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Reference to the tunnel this resource belongs to
+	// +kubebuilder:validation:Required
+	TunnelRef LocalObjectReference `json:"tunnelRef"`
 
-	// Foo is an example field of PangolinResource. Edit pangolinresource_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Resource configuration for NEW resources
+	Name     string `json:"name,omitempty"`
+	Protocol string `json:"protocol,omitempty"`
+
+	// BINDING MODE: Resource ID to bind to existing resource
+	// If specified, will bind to existing resource instead of creating new one
+	ResourceID string `json:"resourceId,omitempty"`
+
+	// HTTP-specific configuration
+	HTTPConfig *HTTPConfig `json:"httpConfig,omitempty"`
+
+	// TCP/UDP-specific configuration
+	ProxyConfig *ProxyConfig `json:"proxyConfig,omitempty"`
+
+	// Target configuration
+	Target TargetConfig `json:"target,omitempty"`
+
+	// Enable/disable this resource
+	// +kubebuilder:default=true
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+// HTTPConfig defines HTTP-specific resource configuration - ENHANCED
+type HTTPConfig struct {
+	// Subdomain for this resource
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Subdomain string `json:"subdomain"`
+
+	// OPTION 1: Domain ID to use (e.g., "domain1")
+	DomainID string `json:"domainId,omitempty"`
+
+	// OPTION 2: Domain name to use (e.g., "dobryops.com") - NEW
+	// If specified, will be resolved to domainId by the operator
+	DomainName string `json:"domainName,omitempty"`
+
+	// If neither domainId nor domainName is specified,
+	// will use the organization's default domain
+}
+
+// ProxyConfig defines TCP/UDP proxy configuration
+type ProxyConfig struct {
+	// Proxy port to expose
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	ProxyPort int32 `json:"proxyPort"`
+	// Enable proxy functionality
+	// +kubebuilder:default=true
+	EnableProxy *bool `json:"enableProxy,omitempty"`
+}
+
+// TargetConfig defines the backend target
+type TargetConfig struct {
+	// Target IP or hostname
+	// +kubebuilder:validation:Required
+	IP string `json:"ip"`
+	// Target port
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	// +kubebuilder:validation:Required
+	Port int32 `json:"port"`
+	// Target method/protocol
+	// +kubebuilder:validation:Enum=http;https;tcp;udp
+	// +kubebuilder:default="http"
+	Method string `json:"method,omitempty"`
+}
+
+// LocalObjectReference contains enough information to locate a resource within the same namespace
+type LocalObjectReference struct {
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
 }
 
 // PangolinResourceStatus defines the observed state of PangolinResource
 type PangolinResourceStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Resource ID from Pangolin API
+	ResourceID string `json:"resourceId,omitempty"`
+	// Target ID from Pangolin API
+	TargetID string `json:"targetId,omitempty"`
+
+	// Resolved domain ID from domain name - NEW
+	ResolvedDomainID string `json:"resolvedDomainId,omitempty"`
+
+	// Full domain where resource is accessible - NEW
+	FullDomain string `json:"fullDomain,omitempty"`
+
+	// Binding mode: "Created" or "Bound"
+	BindingMode string `json:"bindingMode,omitempty"`
+
+	// Current status: Creating, Ready, Error, Deleting, Waiting
+	// +kubebuilder:validation:Enum=Creating;Ready;Error;Deleting;Waiting
+	Status string `json:"status,omitempty"`
+	// Public URL for HTTP resources
+	URL string `json:"url,omitempty"`
+	// Proxy endpoint for TCP/UDP resources
+	ProxyEndpoint string `json:"proxyEndpoint,omitempty"`
+	// Conditions represent the latest available observations
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	// ObservedGeneration reflects the generation most recently observed
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
+//+kubebuilder:resource:shortName=presource
+//+kubebuilder:printcolumn:name="Resource ID",type=string,JSONPath=`.status.resourceId`
+//+kubebuilder:printcolumn:name="Protocol",type=string,JSONPath=`.spec.protocol`
+//+kubebuilder:printcolumn:name="Subdomain",type=string,JSONPath=`.spec.httpConfig.subdomain`
+//+kubebuilder:printcolumn:name="Full Domain",type=string,JSONPath=`.status.fullDomain`
+//+kubebuilder:printcolumn:name="URL",type=string,JSONPath=`.status.url`
+//+kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.status`
+//+kubebuilder:printcolumn:name="Binding Mode",type=string,JSONPath=`.status.bindingMode`
+//+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
 // PangolinResource is the Schema for the pangolinresources API
 type PangolinResource struct {
@@ -50,7 +133,7 @@ type PangolinResource struct {
 	Status PangolinResourceStatus `json:"status,omitempty"`
 }
 
-// +kubebuilder:object:root=true
+//+kubebuilder:object:root=true
 
 // PangolinResourceList contains a list of PangolinResource
 type PangolinResourceList struct {

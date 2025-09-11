@@ -4,33 +4,30 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.1
-  name: pangolinresources.tunnel.pangolin.io
+  name: pangolinorganizations.tunnel.pangolin.io
 spec:
   group: tunnel.pangolin.io
   names:
-    kind: PangolinResource
-    listKind: PangolinResourceList
-    plural: pangolinresources
+    kind: PangolinOrganization
+    listKind: PangolinOrganizationList
+    plural: pangolinorganizations
     shortNames:
-    - presource
-    singular: pangolinresource
+    - porg
+    singular: pangolinorganization
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .status.resourceId
-      name: Resource ID
+    - jsonPath: .status.organizationId
+      name: Org ID
       type: string
-    - jsonPath: .spec.protocol
-      name: Protocol
+    - jsonPath: .status.organizationName
+      name: Org Name
       type: string
-    - jsonPath: .spec.httpConfig.subdomain
-      name: Subdomain
-      type: string
-    - jsonPath: .status.fullDomain
-      name: Full Domain
-      type: string
-    - jsonPath: .status.url
-      name: URL
+    - jsonPath: .status.domains[*].domainId
+      name: Domains
+      type: integer
+    - jsonPath: .status.defaultDomainId
+      name: Default Domain
       type: string
     - jsonPath: .status.status
       name: Status
@@ -44,7 +41,8 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: PangolinResource is the Schema for the pangolinresources API
+        description: PangolinOrganization is the Schema for the pangolinorganizations
+          API
         properties:
           apiVersion:
             description: |-
@@ -64,100 +62,83 @@ spec:
           metadata:
             type: object
           spec:
-            description: PangolinResourceSpec defines the desired state of PangolinResource
+            description: PangolinOrganizationSpec defines the desired state of PangolinOrganization
             properties:
-              enabled:
-                default: true
-                description: Enable/disable this resource
-                type: boolean
-              httpConfig:
-                description: HTTP-specific configuration
-                properties:
-                  domainId:
-                    description: 'OPTION 1: Domain ID to use (e.g., "domain1")'
-                    type: string
-                  domainName:
-                    description: |-
-                      OPTION 2: Domain name to use (e.g., "dobryops.com") - NEW
-                      If specified, will be resolved to domainId by the operator
-                    type: string
-                  subdomain:
-                    description: Subdomain for this resource
-                    minLength: 1
-                    type: string
-                required:
-                - subdomain
-                type: object
-              name:
-                description: Resource configuration for NEW resources
+              apiEndpoint:
+                description: Pangolin API configuration
                 type: string
-              protocol:
-                type: string
-              proxyConfig:
-                description: TCP/UDP-specific configuration
+              apiKeyRef:
+                description: API key reference (organization-scoped)
                 properties:
-                  enableProxy:
-                    default: true
-                    description: Enable proxy functionality
-                    type: boolean
-                  proxyPort:
-                    description: Proxy port to expose
-                    format: int32
-                    maximum: 65535
-                    minimum: 1
-                    type: integer
-                required:
-                - proxyPort
-                type: object
-              resourceId:
-                description: |-
-                  BINDING MODE: Resource ID to bind to existing resource
-                  If specified, will bind to existing resource instead of creating new one
-                type: string
-              target:
-                description: Target configuration
-                properties:
-                  ip:
-                    description: Target IP or hostname
+                  key:
+                    description: The key of the secret to select from.  Must be a
+                      valid secret key.
                     type: string
-                  method:
-                    default: http
-                    description: Target method/protocol
-                    enum:
-                    - http
-                    - https
-                    - tcp
-                    - udp
-                    type: string
-                  port:
-                    description: Target port
-                    format: int32
-                    maximum: 65535
-                    minimum: 1
-                    type: integer
-                required:
-                - ip
-                - port
-                type: object
-              tunnelRef:
-                description: Reference to the tunnel this resource belongs to
-                properties:
                   name:
+                    default: ""
+                    description: |-
+                      Name of the referent.
+                      This field is effectively required, but due to backwards compatibility is
+                      allowed to be empty. Instances of this type with an empty value here are
+                      almost certainly wrong.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     type: string
+                  optional:
+                    description: Specify whether the Secret or its key must be defined
+                    type: boolean
                 required:
-                - name
+                - key
                 type: object
+                x-kubernetes-map-type: atomic
+              defaults:
+                description: Default configuration for tunnels in this org
+                properties:
+                  defaultDomain:
+                    description: 'Default domain for HTTP resources - NEW: can be
+                      domain name or domainId'
+                    type: string
+                  newtClient:
+                    description: Default Newt client configuration
+                    properties:
+                      enabled:
+                        type: boolean
+                      image:
+                        type: string
+                      replicas:
+                        format: int32
+                        type: integer
+                    type: object
+                  siteType:
+                    default: newt
+                    description: Default site type for tunnels
+                    enum:
+                    - newt
+                    - wireguard
+                    - local
+                    type: string
+                type: object
+              displayName:
+                description: Display name (used for new orgs, updated from API for
+                  existing)
+                type: string
+              organizationId:
+                description: |-
+                  BINDING MODE: Organization ID to bind to existing org
+                  If provided, binds to existing org instead of discovering
+                type: string
             required:
-            - tunnelRef
+            - apiEndpoint
+            - apiKeyRef
             type: object
           status:
-            description: PangolinResourceStatus defines the observed state of PangolinResource
+            description: PangolinOrganizationStatus defines the observed state
             properties:
               bindingMode:
-                description: 'Binding mode: "Created" or "Bound"'
+                description: 'Binding mode: "Discovered" (auto-discovered) or "Bound"
+                  (explicitly bound)'
                 type: string
               conditions:
-                description: Conditions represent the latest available observations
+                description: Conditions and timestamps
                 items:
                   description: Condition contains details for one aspect of the current
                     state of this API Resource.
@@ -213,37 +194,65 @@ spec:
                   - type
                   type: object
                 type: array
-              fullDomain:
-                description: Full domain where resource is accessible - NEW
+              defaultDomainId:
+                description: Default domain ID resolved from spec.defaults.defaultDomain
+                  - NEW
                 type: string
+              domains:
+                description: Available domains for this organization - NEW
+                items:
+                  description: Domain represents a Pangolin domain - NEW
+                  properties:
+                    baseDomain:
+                      description: Base domain (e.g., "dobryops.com")
+                      type: string
+                    configManaged:
+                      description: Whether config is managed
+                      type: boolean
+                    domainId:
+                      description: Domain ID from Pangolin API
+                      type: string
+                    failed:
+                      description: Whether domain verification failed
+                      type: boolean
+                    tries:
+                      description: Number of verification tries
+                      type: integer
+                    type:
+                      description: Domain type (e.g., "wildcard")
+                      type: string
+                    verified:
+                      description: Whether the domain is verified
+                      type: boolean
+                  required:
+                  - baseDomain
+                  - configManaged
+                  - domainId
+                  - failed
+                  - tries
+                  - type
+                  - verified
+                  type: object
+                type: array
               observedGeneration:
-                description: ObservedGeneration reflects the generation most recently
-                  observed
                 format: int64
                 type: integer
-              proxyEndpoint:
-                description: Proxy endpoint for TCP/UDP resources
+              organizationId:
+                description: Organization ID from Pangolin API (discovered or confirmed)
                 type: string
-              resolvedDomainId:
-                description: Resolved domain ID from domain name - NEW
-                type: string
-              resourceId:
-                description: Resource ID from Pangolin API
+              organizationName:
+                description: Organization name from API
                 type: string
               status:
-                description: 'Current status: Creating, Ready, Error, Deleting, Waiting'
+                description: 'Current status: Discovering, Binding, Ready, Error'
                 enum:
-                - Creating
+                - Discovering
+                - Binding
                 - Ready
                 - Error
-                - Deleting
-                - Waiting
                 type: string
-              targetId:
-                description: Target ID from Pangolin API
-                type: string
-              url:
-                description: Public URL for HTTP resources
+              subnet:
+                description: Network subnet for this org from API
                 type: string
             type: object
         type: object

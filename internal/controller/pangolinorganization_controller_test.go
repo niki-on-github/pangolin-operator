@@ -26,7 +26,7 @@ import (
 	tunnelv1alpha1 "github.com/bovf/pangolin-operator/api/v1alpha1"
 )
 
-var _ = Describe("PangolinBinding Controller", func() {
+var _ = Describe("PangolinOrganization Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
@@ -36,13 +36,13 @@ var _ = Describe("PangolinBinding Controller", func() {
 			Name:      resourceName,
 			Namespace: "default", // TODO(user):Modify as needed
 		}
-		pangolinbinding := &tunnelv1alpha1.PangolinBinding{}
+		pangolinorganization := &tunnelv1alpha1.PangolinOrganization{}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind PangolinBinding")
-			err := k8sClient.Get(ctx, typeNamespacedName, pangolinbinding)
+			By("creating the custom resource for the Kind PangolinOrganization")
+			err := k8sClient.Get(ctx, typeNamespacedName, pangolinorganization)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &tunnelv1alpha1.PangolinBinding{
+				resource := &tunnelv1alpha1.PangolinOrganization{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
@@ -55,16 +55,16 @@ var _ = Describe("PangolinBinding Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &tunnelv1alpha1.PangolinBinding{}
+			resource := &tunnelv1alpha1.PangolinOrganization{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Cleanup the specific resource instance PangolinBinding")
+			By("Cleanup the specific resource instance PangolinOrganization")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
-			controllerReconciler := &PangolinBindingReconciler{
+			controllerReconciler := &PangolinOrganizationReconciler{
 				Client: k8sClient,
 				Scheme: k8sClient.Scheme(),
 			}
