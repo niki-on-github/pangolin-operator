@@ -45,7 +45,7 @@ type Domain struct {
 	// Domain ID from Pangolin API
 	DomainID string `json:"domainId"`
 
-	// Base domain (e.g., "dobryops.com")
+	// Base domain (e.g., "yourdomain.com")
 	BaseDomain string `json:"baseDomain"`
 
 	// Whether the domain is verified

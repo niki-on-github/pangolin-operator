@@ -78,7 +78,7 @@ spec:
                     type: string
                   domainName:
                     description: |-
-                      OPTION 2: Domain name to use (e.g., "dobryops.com") - NEW
+                      OPTION 2: Domain name to use (e.g., "yourdomain.com") - NEW
                       If specified, will be resolved to domainId by the operator
                     type: string
                   subdomain:

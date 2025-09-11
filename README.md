@@ -35,7 +35,7 @@ The Pangolin Operator simplifies the management of Pangolin organizations, tunne
                                                │
                             ┌──────────────────▼───────────────────┐
                             │          Pangolin API Service        │
-                            │      (api.pangolin.dobryops.com)     │
+                            │      (api.yourpangolinisntance.com)  │
                             └──────────────────────────────────────┘
 ```
 

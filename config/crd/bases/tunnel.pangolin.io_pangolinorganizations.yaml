@@ -204,7 +204,7 @@ spec:
                   description: Domain represents a Pangolin domain - NEW
                   properties:
                     baseDomain:
-                      description: Base domain (e.g., "dobryops.com")
+                      description: Base domain (e.g., "yourdomain.com")
                       type: string
                     configManaged:
                       description: Whether config is managed

@@ -42,7 +42,7 @@ type HTTPConfig struct {
 	// OPTION 1: Domain ID to use (e.g., "domain1")
 	DomainID string `json:"domainId,omitempty"`
 
-	// OPTION 2: Domain name to use (e.g., "dobryops.com") - NEW
+	// OPTION 2: Domain name to use (e.g., "yourdomain.com") - NEW
 	// If specified, will be resolved to domainId by the operator
 	DomainName string `json:"domainName,omitempty"`
 
