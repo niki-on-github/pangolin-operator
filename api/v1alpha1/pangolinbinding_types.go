@@ -1,45 +1,86 @@
-/*
-Copyright 2025.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // PangolinBindingSpec defines the desired state of PangolinBinding
 type PangolinBindingSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Reference to the Kubernetes Service to expose
+	// +kubebuilder:validation:Required
+	ServiceRef ServiceReference `json:"serviceRef"`
 
-	// Foo is an example field of PangolinBinding. Edit pangolinbinding_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Reference to the organization to use
+	// +kubebuilder:validation:Required
+	OrganizationRef LocalObjectReference `json:"organizationRef"`
+
+	// Optional: Reference to specific tunnel
+	// If not specified, will use/create default tunnel for the organization
+	TunnelRef *LocalObjectReference `json:"tunnelRef,omitempty"`
+
+	// Protocol type
+	// +kubebuilder:validation:Enum=http;tcp;udp
+	// +kubebuilder:validation:Required
+	Protocol string `json:"protocol"`
+
+	// Port on the service to expose
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	ServicePort int32 `json:"servicePort"`
+
+	// HTTP-specific configuration
+	HTTPConfig *HTTPConfig `json:"httpConfig,omitempty"`
+
+	// TCP/UDP-specific configuration
+	ProxyConfig *ProxyConfig `json:"proxyConfig,omitempty"`
+
+	// Auto-update targets based on Service endpoints
+	// +kubebuilder:default=true
+	AutoUpdateTargets *bool `json:"autoUpdateTargets,omitempty"`
+}
+
+// ServiceReference contains enough information to locate a service
+type ServiceReference struct {
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+
+	// +kubebuilder:validation:Required
+	Namespace string `json:"namespace"`
 }
 
 // PangolinBindingStatus defines the observed state of PangolinBinding
 type PangolinBindingStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Generated resource name
+	GeneratedResourceName string `json:"generatedResourceName,omitempty"`
+
+	// Public URL for HTTP resources
+	URL string `json:"url,omitempty"`
+
+	// Proxy endpoint for TCP/UDP resources
+	ProxyEndpoint string `json:"proxyEndpoint,omitempty"`
+
+	// Service endpoints currently being targeted
+	ServiceEndpoints []string `json:"serviceEndpoints,omitempty"`
+
+	// Current status: Creating, Ready, Error, Updating
+	// +kubebuilder:validation:Enum=Creating;Ready;Error;Updating
+	Status string `json:"status,omitempty"`
+
+	// Conditions represent the latest available observations
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// ObservedGeneration reflects the generation most recently observed
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
+//+kubebuilder:resource:shortName=pbinding
+//+kubebuilder:printcolumn:name="Service",type=string,JSONPath=`.spec.serviceRef.name`
+//+kubebuilder:printcolumn:name="Protocol",type=string,JSONPath=`.spec.protocol`
+//+kubebuilder:printcolumn:name="URL",type=string,JSONPath=`.status.url`
+//+kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.status`
+//+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
 // PangolinBinding is the Schema for the pangolinbindings API
 type PangolinBinding struct {
@@ -50,7 +91,7 @@ type PangolinBinding struct {
 	Status PangolinBindingStatus `json:"status,omitempty"`
 }
 
-// +kubebuilder:object:root=true
+//+kubebuilder:object:root=true
 
 // PangolinBindingList contains a list of PangolinBinding
 type PangolinBindingList struct {

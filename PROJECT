@@ -38,4 +38,13 @@ resources:
   kind: PangolinBinding
   path: github.com/bovf/pangolin-operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: pangolin.io
+  group: tunnel
+  kind: PangolinOrganization
+  path: github.com/bovf/pangolin-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"

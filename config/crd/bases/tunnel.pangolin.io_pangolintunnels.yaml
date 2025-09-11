@@ -19,20 +19,26 @@ spec:
   - additionalPrinterColumns:
     - jsonPath: .status.siteId
       name: Site ID
+      type: integer
+    - jsonPath: .status.niceId
+      name: Nice ID
       type: string
     - jsonPath: .status.status
       name: Status
       type: string
-    - jsonPath: .status.readyReplicas
-      name: Replicas
-      type: integer
+    - jsonPath: .status.bindingMode
+      name: Binding Mode
+      type: string
+    - jsonPath: .status.online
+      name: Online
+      type: boolean
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: PangolinTunnel is the Schema for the pangolintunel API
+        description: PangolinTunnel is the Schema for the pangolintunnel API
         properties:
           apiVersion:
             description: |-
@@ -54,40 +60,13 @@ spec:
           spec:
             description: PangolinTunnelSpec defines the desired state of PangolinTunnel
             properties:
-              apiEndpoint:
-                description: Pangolin API configuration
-                type: string
-              apiKeyRef:
-                description: SecretKeySelector selects a key of a Secret.
-                properties:
-                  key:
-                    description: The key of the secret to select from.  Must be a
-                      valid secret key.
-                    type: string
-                  name:
-                    default: ""
-                    description: |-
-                      Name of the referent.
-                      This field is effectively required, but due to backwards compatibility is
-                      allowed to be empty. Instances of this type with an empty value here are
-                      almost certainly wrong.
-                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                    type: string
-                  optional:
-                    description: Specify whether the Secret or its key must be defined
-                    type: boolean
-                required:
-                - key
-                type: object
-                x-kubernetes-map-type: atomic
               config:
                 additionalProperties:
                   type: string
-                description: 'Optional: Advanced configuration'
+                description: Custom configuration
                 type: object
-              image:
-                type: string
               newtClient:
+                description: Newt client configuration (overrides org defaults)
                 properties:
                   enabled:
                     type: boolean
@@ -97,29 +76,39 @@ spec:
                     format: int32
                     type: integer
                 type: object
-              organizationId:
-                description: Organization info (can be discovered from API)
+              niceId:
+                description: OR nice ID (e.g., "impractical-oriental-wolf-snake")
                 type: string
-              replicas:
-                description: Newt client configuration
-                format: int32
+              organizationRef:
+                description: Reference to the organization
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
+              siteId:
+                description: |-
+                  BINDING MODE: Bind to existing site using EITHER field
+                  Numeric site ID (e.g., 3)
                 type: integer
               siteName:
-                description: Site configuration
+                description: Site configuration for NEW sites
                 type: string
               siteType:
                 type: string
             required:
-            - apiEndpoint
-            - apiKeyRef
-            - siteName
-            - siteType
+            - organizationRef
             type: object
           status:
             description: PangolinTunnelStatus defines the observed state of PangolinTunnel
             properties:
+              address:
+                type: string
+              bindingMode:
+                description: 'Binding mode: "Created" or "Bound"'
+                type: string
               conditions:
-                description: Condition tracking
                 items:
                   description: Condition contains details for one aspect of the current
                     state of this API Resource.
@@ -176,24 +165,36 @@ spec:
                   type: object
                 type: array
               endpoint:
-                description: Connection details for Newt client
                 type: string
               newtId:
+                description: Newt-specific fields from API
                 type: string
               newtSecretRef:
                 type: string
+              niceId:
+                type: string
               observedGeneration:
-                description: Last observed generation
                 format: int64
                 type: integer
+              online:
+                description: Connection status from API
+                type: boolean
               readyReplicas:
                 description: Deployment status
                 format: int32
                 type: integer
               siteId:
-                description: Site information from Pangolin API
+                description: Site information from Pangolin API (all populated)
+                type: integer
+              siteName:
+                type: string
+              siteType:
                 type: string
               status:
+                description: Current status
+                type: string
+              subnet:
+                description: Network information from API
                 type: string
             type: object
         type: object

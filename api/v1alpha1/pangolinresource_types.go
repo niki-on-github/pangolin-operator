@@ -6,46 +6,109 @@ import (
 
 // PangolinResourceSpec defines the desired state of PangolinResource
 type PangolinResourceSpec struct {
-	// Reference to the tunnel
+	// Reference to the tunnel this resource belongs to
+	// +kubebuilder:validation:Required
 	TunnelRef LocalObjectReference `json:"tunnelRef"`
 
-	// Resource configuration
-	Name     string `json:"name"`
-	Protocol string `json:"protocol"` // "http", "tcp", "udp"
+	// Resource configuration for NEW resources
+	Name     string `json:"name,omitempty"`
+	Protocol string `json:"protocol,omitempty"`
 
-	// HTTP-specific fields
-	Subdomain string `json:"subdomain,omitempty"`
-	DomainID  string `json:"domainId,omitempty"`
+	// BINDING MODE: Resource ID to bind to existing resource
+	// If specified, will bind to existing resource instead of creating new one
+	ResourceID string `json:"resourceId,omitempty"`
 
-	// TCP/UDP-specific fields
-	ProxyPort   *int32 `json:"proxyPort,omitempty"`
-	EnableProxy *bool  `json:"enableProxy,omitempty"`
+	// HTTP-specific configuration
+	HTTPConfig *HTTPConfig `json:"httpConfig,omitempty"`
+
+	// TCP/UDP-specific configuration
+	ProxyConfig *ProxyConfig `json:"proxyConfig,omitempty"`
 
 	// Target configuration
-	TargetIP     string `json:"targetIp"`
-	TargetPort   int32  `json:"targetPort"`
-	TargetMethod string `json:"targetMethod,omitempty"` // "http", "https", "tcp", "udp"
+	Target TargetConfig `json:"target,omitempty"`
 
-	// Optional: Load balancing
+	// Enable/disable this resource
+	// +kubebuilder:default=true
 	Enabled *bool `json:"enabled,omitempty"`
+}
+
+// HTTPConfig defines HTTP-specific resource configuration - ENHANCED
+type HTTPConfig struct {
+	// Subdomain for this resource
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Subdomain string `json:"subdomain"`
+
+	// OPTION 1: Domain ID to use (e.g., "domain1")
+	DomainID string `json:"domainId,omitempty"`
+
+	// OPTION 2: Domain name to use (e.g., "dobryops.com") - NEW
+	// If specified, will be resolved to domainId by the operator
+	DomainName string `json:"domainName,omitempty"`
+
+	// If neither domainId nor domainName is specified,
+	// will use the organization's default domain
+}
+
+// ProxyConfig defines TCP/UDP proxy configuration
+type ProxyConfig struct {
+	// Proxy port to expose
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	ProxyPort int32 `json:"proxyPort"`
+	// Enable proxy functionality
+	// +kubebuilder:default=true
+	EnableProxy *bool `json:"enableProxy,omitempty"`
+}
+
+// TargetConfig defines the backend target
+type TargetConfig struct {
+	// Target IP or hostname
+	// +kubebuilder:validation:Required
+	IP string `json:"ip"`
+	// Target port
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	// +kubebuilder:validation:Required
+	Port int32 `json:"port"`
+	// Target method/protocol
+	// +kubebuilder:validation:Enum=http;https;tcp;udp
+	// +kubebuilder:default="http"
+	Method string `json:"method,omitempty"`
 }
 
 // LocalObjectReference contains enough information to locate a resource within the same namespace
 type LocalObjectReference struct {
+	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 }
 
 // PangolinResourceStatus defines the observed state of PangolinResource
 type PangolinResourceStatus struct {
+	// Resource ID from Pangolin API
 	ResourceID string `json:"resourceId,omitempty"`
-	TargetID   string `json:"targetId,omitempty"`
-	Status     string `json:"status,omitempty"`
-	URL        string `json:"url,omitempty"`
+	// Target ID from Pangolin API
+	TargetID string `json:"targetId,omitempty"`
 
-	// Condition tracking
+	// Resolved domain ID from domain name - NEW
+	ResolvedDomainID string `json:"resolvedDomainId,omitempty"`
+
+	// Full domain where resource is accessible - NEW
+	FullDomain string `json:"fullDomain,omitempty"`
+
+	// Binding mode: "Created" or "Bound"
+	BindingMode string `json:"bindingMode,omitempty"`
+
+	// Current status: Creating, Ready, Error, Deleting, Waiting
+	// +kubebuilder:validation:Enum=Creating;Ready;Error;Deleting;Waiting
+	Status string `json:"status,omitempty"`
+	// Public URL for HTTP resources
+	URL string `json:"url,omitempty"`
+	// Proxy endpoint for TCP/UDP resources
+	ProxyEndpoint string `json:"proxyEndpoint,omitempty"`
+	// Conditions represent the latest available observations
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
-
-	// Last observed generation
+	// ObservedGeneration reflects the generation most recently observed
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
@@ -54,8 +117,11 @@ type PangolinResourceStatus struct {
 //+kubebuilder:resource:shortName=presource
 //+kubebuilder:printcolumn:name="Resource ID",type=string,JSONPath=`.status.resourceId`
 //+kubebuilder:printcolumn:name="Protocol",type=string,JSONPath=`.spec.protocol`
+//+kubebuilder:printcolumn:name="Subdomain",type=string,JSONPath=`.spec.httpConfig.subdomain`
+//+kubebuilder:printcolumn:name="Full Domain",type=string,JSONPath=`.status.fullDomain`
 //+kubebuilder:printcolumn:name="URL",type=string,JSONPath=`.status.url`
 //+kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.status`
+//+kubebuilder:printcolumn:name="Binding Mode",type=string,JSONPath=`.status.bindingMode`
 //+kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
 // PangolinResource is the Schema for the pangolinresources API

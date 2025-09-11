@@ -3,4 +3,5 @@ resources:
 - tunnel_v1alpha1_pangolintunnel.yaml
 - tunnel_v1alpha1_pangolinresource.yaml
 - tunnel_v1alpha1_pangolinbinding.yaml
+- tunnel_v1alpha1_pangolinorganization.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

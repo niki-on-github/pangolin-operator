@@ -1,5 +1,9 @@
 package pangolin
 
+import (
+	"strconv"
+)
+
 // Organization represents a Pangolin organization
 type Organization struct {
 	OrgID  string `json:"orgId"`
@@ -7,58 +11,109 @@ type Organization struct {
 	Subnet string `json:"subnet"`
 }
 
-// Site represents a Pangolin site
+// Domain represents a Pangolin domain
+type Domain struct {
+	DomainID      string `json:"domainId"`
+	BaseDomain    string `json:"baseDomain"`
+	Verified      bool   `json:"verified"`
+	Type          string `json:"type"`
+	Failed        bool   `json:"failed"`
+	Tries         int    `json:"tries"`
+	ConfigManaged bool   `json:"configManaged"`
+}
+
+// Site represents a Pangolin site (matches Integration API fields)
 type Site struct {
-	ID       string `json:"id,omitempty"`
-	SiteID   string `json:"siteId,omitempty"`
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	Status   string `json:"status,omitempty"`
-	Endpoint string `json:"endpoint,omitempty"`
+	// IDs from API
+	SiteID int    `json:"siteId"`
+	NiceID string `json:"niceId"`
+	OrgID  string `json:"orgId"`
+
+	// Basic info
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+	Status string `json:"status,omitempty"`
+
+	// Network info
+	Subnet  string `json:"subnet"`
+	Address string `json:"address"`
+
+	// Connection info
+	Online   bool   `json:"online"`
+	Endpoint string `json:"endpoint"`
+
+	// Keys and security
+	PubKey    string `json:"pubKey"`
+	PublicKey string `json:"publicKey"`
 
 	// Newt-specific fields
-	NewtID        string `json:"newtId,omitempty"`
-	NewtSecretKey string `json:"newtSecretKey,omitempty"`
+	NewtID              string `json:"newtId,omitempty"`
+	NewtSecretKey       string `json:"newtSecretKey,omitempty"`
+	NewtVersion         string `json:"newtVersion"`
+	NewtUpdateAvailable bool   `json:"newtUpdateAvailable"`
+
+	// Bandwidth stats
+	MegabytesIn         float64 `json:"megabytesIn"`
+	MegabytesOut        float64 `json:"megabytesOut"`
+	LastBandwidthUpdate string  `json:"lastBandwidthUpdate"`
+
+	// Advanced fields
+	ExitNodeID          int    `json:"exitNodeId"`
+	LastHolePunch       string `json:"lastHolePunch"`
+	ListenPort          int    `json:"listenPort"`
+	DockerSocketEnabled bool   `json:"dockerSocketEnabled"`
+	RemoteSubnets       string `json:"remoteSubnets"`
 }
 
-// Resource represents a Pangolin resource
-type Resource struct {
-	ID          string `json:"id,omitempty"`
-	ResourceID  string `json:"resourceId,omitempty"`
-	Name        string `json:"name"`
-	SiteID      int    `json:"siteId"`
-	HTTP        bool   `json:"http"`
-	Protocol    string `json:"protocol"`
-	Subdomain   string `json:"subdomain,omitempty"`
-	DomainID    string `json:"domainId,omitempty"`
-	ProxyPort   int32  `json:"proxyPort,omitempty"`
-	EnableProxy bool   `json:"enableProxy,omitempty"`
-	Enabled     bool   `json:"enabled,omitempty"`
-}
-
-// ResourceCreateSpec defines the spec for creating a resource
+// ResourceCreateSpec defines the specification for creating a resource
 type ResourceCreateSpec struct {
-	Name        string `json:"name"`
-	SiteID      int    `json:"siteId"`
-	HTTP        bool   `json:"http"`
-	Protocol    string `json:"protocol"`
-	Subdomain   string `json:"subdomain,omitempty"`
-	DomainID    string `json:"domainId,omitempty"`
-	ProxyPort   int32  `json:"proxyPort,omitempty"`
-	EnableProxy bool   `json:"enableProxy,omitempty"`
+	Name     string `json:"name"`
+	SiteID   int    `json:"siteId"`
+	HTTP     bool   `json:"http"`
+	Protocol string `json:"protocol"`
+	// HTTP-specific fields
+	Subdomain string `json:"subdomain,omitempty"`
+	DomainID  string `json:"domainId,omitempty"`
+	// TCP/UDP-specific fields
+	ProxyPort   int32 `json:"proxyPort,omitempty"`
+	EnableProxy bool  `json:"enableProxy,omitempty"`
 }
 
-// Target represents a Pangolin target
-type Target struct {
-	ID      string `json:"id,omitempty"`
+// TargetCreateSpec defines the specification for creating a target
+type TargetCreateSpec struct {
 	IP      string `json:"ip"`
 	Port    int32  `json:"port"`
 	Method  string `json:"method"`
 	Enabled bool   `json:"enabled"`
 }
 
-// TargetCreateSpec defines the spec for creating a target
-type TargetCreateSpec struct {
+// Resource represents a Pangolin resource
+// The Integration API returns resourceId (numeric) on creation; keep both and normalize.
+type Resource struct {
+	ID         string `json:"id,omitempty"`         // may be empty in create response
+	ResourceID int    `json:"resourceId,omitempty"` // present in create response
+	Name       string `json:"name,omitempty"`
+	SiteID     int    `json:"siteId,omitempty"`
+	HTTP       bool   `json:"http"`
+	Protocol   string `json:"protocol"`
+	Subdomain  string `json:"subdomain,omitempty"`
+	Enabled    bool   `json:"enabled"`
+}
+
+// EffectiveID returns a string identifier usable in URL paths.
+func (r *Resource) EffectiveID() string {
+	if r.ID != "" {
+		return r.ID
+	}
+	if r.ResourceID > 0 {
+		return strconv.Itoa(r.ResourceID)
+	}
+	return ""
+}
+
+// Target represents a Pangolin target
+type Target struct {
+	ID      string `json:"id"`
 	IP      string `json:"ip"`
 	Port    int32  `json:"port"`
 	Method  string `json:"method"`

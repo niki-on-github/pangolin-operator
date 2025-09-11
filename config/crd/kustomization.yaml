@@ -5,6 +5,7 @@ resources:
 - bases/tunnel.pangolin.io_pangolintunnels.yaml
 - bases/tunnel.pangolin.io_pangolinresources.yaml
 - bases/tunnel.pangolin.io_pangolinbindings.yaml
+- bases/tunnel.pangolin.io_pangolinorganizations.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:
@@ -17,6 +18,7 @@ patches:
 #- path: patches/cainjection_in_pangolintunnels.yaml
 #- path: patches/cainjection_in_pangolinresources.yaml
 #- path: patches/cainjection_in_pangolinbindings.yaml
+#- path: patches/cainjection_in_pangolinorganizations.yaml
 # +kubebuilder:scaffold:crdkustomizecainjectionpatch
 
 # [WEBHOOK] To enable webhook, uncomment the following section

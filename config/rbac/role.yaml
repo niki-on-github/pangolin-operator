@@ -7,6 +7,15 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - endpoints
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - secrets
   verbs:
   - create
@@ -32,8 +41,8 @@ rules:
   - tunnel.pangolin.io
   resources:
   - pangolinbindings
+  - pangolinorganizations
   - pangolinresources
-  - pangolintunel
   - pangolintunnels
   verbs:
   - create
@@ -47,8 +56,8 @@ rules:
   - tunnel.pangolin.io
   resources:
   - pangolinbindings/finalizers
+  - pangolinorganizations/finalizers
   - pangolinresources/finalizers
-  - pangolintunel/finalizers
   - pangolintunnels/finalizers
   verbs:
   - update
@@ -56,8 +65,8 @@ rules:
   - tunnel.pangolin.io
   resources:
   - pangolinbindings/status
+  - pangolinorganizations/status
   - pangolinresources/status
-  - pangolintunel/status
   - pangolintunnels/status
   verbs:
   - get
