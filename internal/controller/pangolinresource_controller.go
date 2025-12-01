@@ -217,8 +217,13 @@ func (r *PangolinResourceReconciler) Reconcile(ctx context.Context, req ctrl.Req
 // The tunnel provides the site context (site ID) for target creation.
 func (r *PangolinResourceReconciler) getTunnelForResource(ctx context.Context, resource *tunnelv1alpha1.PangolinResource) (*tunnelv1alpha1.PangolinTunnel, error) {
 	tunnel := &tunnelv1alpha1.PangolinTunnel{}
+	// Use tunnel namespace from ref, fallback to resource namespace
+	tunnelNamespace := resource.Spec.TunnelRef.Namespace
+	if tunnelNamespace == "" {
+		tunnelNamespace = resource.Namespace
+	}
 	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: resource.Namespace,
+		Namespace: tunnelNamespace,
 		Name:      resource.Spec.TunnelRef.Name,
 	}, tunnel); err != nil {
 		return nil, fmt.Errorf("failed to get tunnel %s: %w", resource.Spec.TunnelRef.Name, err)

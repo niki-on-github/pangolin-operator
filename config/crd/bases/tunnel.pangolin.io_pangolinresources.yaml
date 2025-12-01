@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.1
+    controller-gen.kubebuilder.io/version: v0.17.0
   name: pangolinresources.tunnel.pangolin.io
 spec:
   group: tunnel.pangolin.io
@@ -155,6 +155,10 @@ spec:
                 description: Reference to the tunnel this resource belongs to
                 properties:
                   name:
+                    type: string
+                  namespace:
+                    description: Namespace of the referenced resource. If empty, defaults
+                      to the same namespace as the referencing resource.
                     type: string
                 required:
                 - name

@@ -94,10 +94,14 @@ type TargetConfig struct {
 	Method string `json:"method,omitempty"`
 }
 
-// LocalObjectReference contains enough information to locate a resource within the same namespace
+// LocalObjectReference contains enough information to locate a resource
 type LocalObjectReference struct {
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
+
+	// Namespace of the referenced resource. If empty, defaults to the same namespace as the referencing resource.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
 }
 
 // PangolinResourceStatus defines the observed state of PangolinResource
