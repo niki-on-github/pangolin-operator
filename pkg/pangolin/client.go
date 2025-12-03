@@ -366,13 +366,13 @@ func (c *Client) ListResources(ctx context.Context, orgID string) ([]Resource, e
 	return result.Data.Resources, nil
 }
 
-// FindResourceBySubdomain finds a resource by its subdomain and optionally domain ID.
+// FindResourceBySubdomain finds a resource by its subdomain and domain ID.
 //
 // Parameters:
 //   - ctx: Context for request cancellation
 //   - orgID: Organization ID to search in
 //   - subdomain: Subdomain to match
-//   - domainID: Domain ID to match (can be empty for subdomain-only match)
+//   - domainID: Domain ID to match (required for accurate matching)
 //
 // Returns:
 //   - Resource if found, nil if not found
@@ -383,18 +383,34 @@ func (c *Client) FindResourceBySubdomain(ctx context.Context, orgID, subdomain, 
 		return nil, err
 	}
 
-	// First try exact match with domainID
-	if domainID != "" {
-		for _, r := range resources {
-			if r.Subdomain == subdomain && r.DomainID == domainID {
-				return &r, nil
-			}
+	// Match by subdomain AND domainID (both required for multi-domain support)
+	for _, r := range resources {
+		if r.Subdomain == subdomain && r.DomainID == domainID {
+			return &r, nil
 		}
 	}
 
-	// Fallback: match by subdomain only (for cases where domainID format differs)
+	return nil, nil // Not found
+}
+
+// FindResourceByName finds a resource by its display name.
+//
+// Parameters:
+//   - ctx: Context for request cancellation
+//   - orgID: Organization ID to search in
+//   - name: Resource name to match (e.g., "namespace/ingress/host")
+//
+// Returns:
+//   - Resource if found, nil if not found
+//   - Error if request fails
+func (c *Client) FindResourceByName(ctx context.Context, orgID, name string) (*Resource, error) {
+	resources, err := c.ListResources(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, r := range resources {
-		if r.Subdomain == subdomain {
+		if r.Name == name {
 			return &r, nil
 		}
 	}

@@ -345,26 +345,37 @@ func (r *PangolinResourceReconciler) reconcilePangolinResource(
 		if strings.Contains(err.Error(), "409") || strings.Contains(err.Error(), "already exists") {
 			logger.Info("Resource already exists in Pangolin, attempting to find and bind")
 
-			// Try to find existing resource by subdomain
+			var existingRes *pangolin.Resource
+			var findErr error
+
+			// Try to find existing resource by subdomain + domainID first
 			if resource.Spec.HTTPConfig != nil {
-				existingRes, findErr := api.FindResourceBySubdomain(ctx, orgID,
+				existingRes, findErr = api.FindResourceBySubdomain(ctx, orgID,
 					resource.Spec.HTTPConfig.Subdomain,
 					resource.Status.ResolvedDomainID)
 				if findErr != nil {
-					logger.Error(findErr, "Failed to find existing resource")
-					return nil, fmt.Errorf("resource exists but failed to find it: %w", findErr)
+					logger.Error(findErr, "Failed to find existing resource by subdomain")
 				}
-				if existingRes != nil {
-					logger.Info("Found existing resource, binding to it",
-						"resourceID", existingRes.EffectiveID(),
-						"subdomain", existingRes.Subdomain)
-					resource.Status.BindingMode = "Bound"
-					pRes = existingRes
-				} else {
-					return nil, fmt.Errorf("resource exists but could not be found: %w", err)
+			}
+
+			// Fallback: find by resource name (unique per host)
+			if existingRes == nil && resource.Spec.Name != "" {
+				existingRes, findErr = api.FindResourceByName(ctx, orgID, resource.Spec.Name)
+				if findErr != nil {
+					logger.Error(findErr, "Failed to find existing resource by name")
 				}
+			}
+
+			if existingRes != nil {
+				logger.Info("Found existing resource, binding to it",
+					"resourceID", existingRes.EffectiveID(),
+					"name", existingRes.Name,
+					"subdomain", existingRes.Subdomain)
+				resource.Status.BindingMode = "Bound"
+				pRes = existingRes
 			} else {
-				return nil, fmt.Errorf("failed to create Pangolin resource: %w", err)
+				return nil, fmt.Errorf("resource exists but could not be found (subdomain=%s, domainID=%s, name=%s): %w",
+					resource.Spec.HTTPConfig.Subdomain, resource.Status.ResolvedDomainID, resource.Spec.Name, err)
 			}
 		} else {
 			return nil, fmt.Errorf("failed to create Pangolin resource: %w", err)
@@ -604,24 +615,51 @@ func (r *PangolinResourceReconciler) resolveDomainForResource(
 	if resource.Spec.HTTPConfig != nil && resource.Spec.HTTPConfig.DomainID != "" {
 		domainID := resource.Spec.HTTPConfig.DomainID
 		subdomain := resource.Spec.HTTPConfig.Subdomain
-		fullDomain := fmt.Sprintf("%s.dobryops.com", subdomain)
-		return domainID, fullDomain, nil
+
+		// Find domain name by ID to construct full domain
+		for _, domain := range org.Status.Domains {
+			if domain.DomainID == domainID {
+				fullDomain := fmt.Sprintf("%s.%s", subdomain, domain.BaseDomain)
+				return domainID, fullDomain, nil
+			}
+		}
+
+		// Domain ID not found - return error
+		return "", "", fmt.Errorf("domain ID %q not found in organization %s", domainID, org.Name)
 	}
 
 	// Priority 2: Domain name (resolve to ID)
 	if resource.Spec.HTTPConfig != nil && resource.Spec.HTTPConfig.DomainName != "" {
-		domainID := "domain1"
+		domainName := resource.Spec.HTTPConfig.DomainName
 		subdomain := resource.Spec.HTTPConfig.Subdomain
-		fullDomain := fmt.Sprintf("%s.%s", subdomain, resource.Spec.HTTPConfig.DomainName)
-		return domainID, fullDomain, nil
+		fullDomain := fmt.Sprintf("%s.%s", subdomain, domainName)
+
+		// Find domain ID by matching domain name in org.Status.Domains
+		for _, domain := range org.Status.Domains {
+			if domain.BaseDomain == domainName {
+				return domain.DomainID, fullDomain, nil
+			}
+		}
+
+		// Domain not found in organization - return error
+		return "", "", fmt.Errorf("domain %q not found in organization %s", domainName, org.Name)
 	}
 
 	// Priority 3: Organization default domain
 	if org.Status.DefaultDomainID != "" {
 		domainID := org.Status.DefaultDomainID
 		subdomain := resource.Spec.HTTPConfig.Subdomain
-		fullDomain := fmt.Sprintf("%s.dobryops.com", subdomain)
-		return domainID, fullDomain, nil
+
+		// Find default domain name by ID
+		for _, domain := range org.Status.Domains {
+			if domain.DomainID == domainID {
+				fullDomain := fmt.Sprintf("%s.%s", subdomain, domain.BaseDomain)
+				return domainID, fullDomain, nil
+			}
+		}
+
+		// Default domain ID set but not found in domains list
+		return "", "", fmt.Errorf("default domain ID %q not found in organization %s", domainID, org.Name)
 	}
 
 	return "", "", fmt.Errorf("could not resolve domain for resource")
