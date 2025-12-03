@@ -181,14 +181,22 @@ func (r *PangolinResourceReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return r.updateResourceStatus(ctx, resource, "Error", err.Error())
 		}
 
+		logger.Info("Targets reconciled", "totalTargets", len(allTargetIDs), "targetIDs", allTargetIDs)
+
+		// Re-fetch resource to avoid optimistic locking conflict
+		if err := r.Get(ctx, req.NamespacedName, resource); err != nil {
+			logger.Error(err, "Failed to re-fetch resource before status update")
+			return ctrl.Result{}, err
+		}
+
 		resource.Status.TargetIDs = allTargetIDs
 		resource.Status.TargetCount = len(allTargetIDs)
-		logger.Info("Targets reconciled", "totalTargets", len(allTargetIDs), "targetIDs", allTargetIDs)
 
 		// Update status immediately after target reconciliation to prevent duplicate creates
 		if err := r.Status().Update(ctx, resource); err != nil {
 			logger.Error(err, "Failed to update status after target reconciliation")
-			return ctrl.Result{}, err
+			// Requeue to retry - this is a transient conflict
+			return ctrl.Result{Requeue: true}, nil
 		}
 	} else {
 		logger.Info("No targets specified, resource has no operator-managed targets", "resourceID", resourceID)

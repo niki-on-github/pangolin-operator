@@ -366,13 +366,13 @@ func (c *Client) ListResources(ctx context.Context, orgID string) ([]Resource, e
 	return result.Data.Resources, nil
 }
 
-// FindResourceBySubdomain finds a resource by its subdomain and domain ID.
+// FindResourceBySubdomain finds a resource by its subdomain and optionally domain ID.
 //
 // Parameters:
 //   - ctx: Context for request cancellation
 //   - orgID: Organization ID to search in
 //   - subdomain: Subdomain to match
-//   - domainID: Domain ID to match
+//   - domainID: Domain ID to match (can be empty for subdomain-only match)
 //
 // Returns:
 //   - Resource if found, nil if not found
@@ -383,11 +383,22 @@ func (c *Client) FindResourceBySubdomain(ctx context.Context, orgID, subdomain, 
 		return nil, err
 	}
 
+	// First try exact match with domainID
+	if domainID != "" {
+		for _, r := range resources {
+			if r.Subdomain == subdomain && r.DomainID == domainID {
+				return &r, nil
+			}
+		}
+	}
+
+	// Fallback: match by subdomain only (for cases where domainID format differs)
 	for _, r := range resources {
-		if r.Subdomain == subdomain && r.DomainID == domainID {
+		if r.Subdomain == subdomain {
 			return &r, nil
 		}
 	}
+
 	return nil, nil // Not found
 }
 
@@ -589,7 +600,7 @@ func (c *Client) CreateTarget(ctx context.Context, resourceID, siteID string, sp
 //
 // Returns error if deletion fails.
 func (c *Client) DeleteTarget(ctx context.Context, resourceID, targetID string) error {
-	path := fmt.Sprintf("/resource/%s/target/%s", resourceID, targetID)
+	path := fmt.Sprintf("resource/%s/target/%s", resourceID, targetID)
 	resp, err := c.makeRequest(ctx, "DELETE", path, nil)
 	if err != nil {
 		return err
