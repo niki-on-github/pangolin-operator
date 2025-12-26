@@ -62,7 +62,7 @@ func (c Client) makeRequest(ctx context.Context, method, path string, body inter
 	url := fmt.Sprintf("%s/v1/%s", strings.TrimRight(c.endpoint, "/"), cleanPath)
 
 	logger := log.FromContext(ctx)
-	logger.Info("url=", url, " token=", c.apiKey)
+	logger.Info("connection infos", "url", url, " token", c.apiKey)
 	var reqBody []byte
 	if body != nil {
 		b, err := json.Marshal(body)

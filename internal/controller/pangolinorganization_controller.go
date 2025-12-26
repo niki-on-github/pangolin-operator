@@ -157,7 +157,7 @@ func (r *PangolinOrganizationReconciler) createPangolinClient(ctx context.Contex
 	}
 
 	logger := log.FromContext(ctx)
-	logger.Info("createPangolinClient with", string(apiKey))
+	logger.Info("createPangolinClient", "apiKey", string(apiKey))
 
 	return pangolin.NewClient(org.Spec.APIEndpoint, string(apiKey)), nil
 }
