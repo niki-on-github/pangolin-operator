@@ -156,6 +156,9 @@ func (r *PangolinOrganizationReconciler) createPangolinClient(ctx context.Contex
 		return nil, fmt.Errorf("API key not found in secret")
 	}
 
+	logger := log.FromContext(ctx)
+	logger.Info("createPangolinClient with", string(apiKey))
+
 	return pangolin.NewClient(org.Spec.APIEndpoint, string(apiKey)), nil
 }
 

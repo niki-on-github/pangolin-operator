@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // Client represents a Pangolin API client for interacting with the Pangolin platform.
@@ -60,6 +61,8 @@ func (c Client) makeRequest(ctx context.Context, method, path string, body inter
 	cleanPath := strings.TrimLeft(path, "/")
 	url := fmt.Sprintf("%s/v1/%s", strings.TrimRight(c.endpoint, "/"), cleanPath)
 
+	logger := log.FromContext(ctx)
+	logger.Info("url=", url, " token=", c.apiKey)
 	var reqBody []byte
 	if body != nil {
 		b, err := json.Marshal(body)
